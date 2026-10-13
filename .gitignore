@@ -2,12 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
-
 _targets/
 sandbox/
 output/panels/
 renv/library/
 renv/staging/
-
+images/
+data/
 *.qs
 *.rds

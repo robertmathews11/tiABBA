@@ -1,7 +1,7 @@
 Package: tiABBA
 Type: Package
-Title: totoInferno Atlas of Biological Bicor Analyses
-Version: 0.1.0
+Title: totoInferno Atlas of Biological Bicor Analyses (tiABBA)
+Version: 1.0.0
 Authors@R: c(
     person(
       "Robert", "Mathews",
@@ -9,11 +9,37 @@ Authors@R: c(
       role = c("aut", "cre")
     )
   )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
+Description: This package implements totoInferno filtering to iteratively scan and elute core coexpressed gene networks.
+    Additional tools expand on the results to generate a web app which can be used to quickly assess results.
+    The primary use of this package is to automate gene network creation and present the user with faster decision making and analysis.
+    Note that, while many options are presented, this package encourages the use of "minimum viable" filtering to maximize the accurate portrayal of the biological system.
+    When in doubt, keep more genes!
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Config/roxygen2/version: 8.1.0
 URL: https://github.com/robertmathews11/tiABBA
 BugReports: https://github.com/robertmathews11/tiABBA/issues
+Imports: 
+    magrittr,
+    dplyr,
+    stringr,
+    purrr,
+    furrr,
+    tibble,
+    dynamicTreeCut,
+    stats,
+    tidyr,
+    ggplot2,
+    ragg,
+    totoInferno,
+    future,
+    parallel,
+    rlang,
+    shiny,
+    patchwork,
+    tidyselect,
+    scales,
+    generics,
+    htmltools
+Roxygen: list(markdown = TRUE)

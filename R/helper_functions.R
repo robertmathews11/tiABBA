@@ -1,0 +1,331 @@
+#' Prepare directories
+#'
+#' This helper function prepares directories for saving data
+#'
+#' @param group_file String for directory for the group_condition combination. Format as group_condition.
+#'
+#' @return This function creates file directories and has no return
+#'
+#' @export
+
+prepare_directory <- function(
+
+  group_file
+
+  ) {
+
+  if(!dir.exists("data")){dir.create("data")}
+  if(!dir.exists("images")){dir.create("images")}
+
+  outdir <- file.path("data", group_file)
+  filedir <- file.path("images", group_file)
+  if(!dir.exists(outdir)){dir.create(outdir)}
+  if(!dir.exists(filedir)){dir.create(filedir)}
+
+  if(!dir.exists(file.path(filedir,"heatmap"))){dir.create(file.path(filedir,"heatmap"))}
+  if(!dir.exists(file.path(filedir,"annotation_main"))){dir.create(file.path(filedir,"annotation_main"))}
+  if(!dir.exists(file.path(filedir,"annotation_alt"))){dir.create(file.path(filedir,"annotation_alt"))}
+
+  return("Directory setup complete")
+}
+
+
+#' Prepare expression data
+#'
+#' This helper function averages sample data by time point for use in expression plots
+#'
+#' @param expr A data frame or matrix object, with rows of gene expression readings and columns of sample-time names.
+#' @param group_file String for directory for the group_condition combination. Format as group_condition.
+#' @param time_seq An optional numeric vector to generate ZT time points as column names, i.e.: 0,2,4 ....
+#' @param split_pattern A string for the pattern by which the column names will be split using [stringr::str_split_i()]. Default is formatted for sample_time.
+#' @param split_index Numeric index for retreiving time points after applying [stringr::str_split_i()].
+#'
+#' @return A data frame matching the input row length, and columns averaged by time point
+#'
+#' @export
+
+prepare_expr <- function(
+
+  expr,
+  group_file,
+  time_seq = NULL,
+  split_pattern = "_",
+  split_index = 2
+
+  ) {
+
+  # Pull time points to be mapped
+  time_points <- str_split_i(colnames(expr), pattern = split_pattern, i = split_index)
+
+  if(!is.null(time_seq) & length(time_seq) != length(time_points)){
+    stop("Error: time_seq input does not match length of averaged columns")
+  }
+
+  # Normalize data by time point
+  norm_data <- map(time_points, \(time_i){
+    pull_res <- expr[,str_detect(colnames(expr), time_i)]
+    pull_res <- apply(pull_res, 1, mean)
+
+    return(pull_res)
+  }) %>%
+    list_cbind() %>%
+    normalize_rows()
+
+  # Set column names
+  if(!is.null(time_seq)){
+    create_names <- str_c("zt_", time_seq)
+    colnames(norm_data) <- create_names
+  }else{
+    colnames(norm_data) <- time_points
+  }
+
+  # Save data
+  saveRDS(norm_data, file.path("data", group_file, "expression"))
+
+  return(paste("Finished Time Normalization, saved to", file.path("data",group_file,"expression")))
+}
+
+
+#' Min-Max normalize data
+#'
+#' This helper function applied min-max normalization to the input data
+#'
+#' @param expr A data frame or matrix object to be normalized
+#'
+#' @return A matrix with rows min-max normalized between -1 and 1
+#'
+#' @export
+
+normalize_rows <- function(
+
+  expr
+
+  ) {
+  # Apply normalization to each row
+  normalized_expr <- t(apply(expr, 1, function(row) {
+    min_val <- min(row)
+    max_val <- max(row)
+
+    # Normalize the row values between -1 and 1
+    normalized_row <- (row - min_val) / (max_val - min_val) * 2 - 1
+    return(normalized_row)
+  }))
+
+  # Convert the result back to a data frame
+  normalized_expr <- as.matrix(normalized_expr)
+
+  return(normalized_expr)
+}
+
+
+#' Condense silhouette result
+#'
+#' @param sil_res A list object containing the results from [totoInferno::silhouette_filter]
+#'
+#' @returns A list object containing result metrics, clustered gene order, and two cluster assignments.
+#'
+#' @export
+
+filter_res <- function(
+
+  sil_res
+
+  ) {
+
+  eigen_metric <- sil_res[["metric"]][["eigen"]]
+  eigen_metric <- eigen_metric %>%
+    distinct(.data$cluster) %>%
+    map(\(cluster_i){
+      sub_cluster <- eigen_metric[eigen_metric$cluster == cluster_i,] %>%
+        arrange(desc(eigen)) %>%
+        select(eigen) %>%
+        deframe()
+
+      eigen_ratio <- sub_cluster[2] / sub_cluster[1]
+      return(data.frame(
+        cluster = cluster_i,
+        eigen = eigen_ratio
+      ))
+    })
+
+  res <- list()
+
+  res[["metric"]] <- list(
+    silhouette = sil_res[["metric"]][[1]],
+    var = sil_res[["metric"]][["within_cluster_var_overall"]],
+    eigen = eigen_metric[[1]],
+    n_cluster = sil_res[["metric"]][["n_clusters_final"]],
+    n_gene = sil_res[["metric"]][["n_genes_out"]]
+  )
+
+  order_labels <- sil_res[["data"]][["labels_final"]][sil_res[["data"]][["hclust_final"]][["order"]]]
+  res[["labels"]] <- order_labels
+
+  dynamic_cut <- cutreeHybrid(sil_res[["data"]][["hclust_final"]], distM = as.matrix(sil_res[["data"]][["dist_final"]]),
+                              verbose = 0, deepSplit = 0, minClusterSize = 5,
+                              minGap = .7)
+  alt_res <- setNames(dynamic_cut$labels, names(sil_res[["data"]][["labels_final"]]))
+  order_alt <- alt_res[sil_res[["data"]][["hclust_final"]][["order"]]]
+
+  res[["alt_labels"]] <- order_alt
+
+  return(res)
+}
+
+
+#' Render individual results panel
+#'
+#' @param sil_res Results from [tiABBA::scan_silhouette]
+#' @param cor_mat A square correlation matrix
+#' @param cor_cut Numeric value of correlation parameter
+#' @param sil_cut Numeric value of silhouette parameter
+#' @param outdir File path to group_condition
+#' @param size_px Image size to be saved
+#' @param max_dim Maximum image size to save
+#'
+#' @returns A saved heatmap and annotation png
+#'
+#' @export
+#'
+render_panel <- function(sil_res, cor_mat,
+                         cor_cut, sil_cut,
+                         outdir, size_px = 300, max_dim = size_px) {
+
+
+
+  # Prepare data for plotting
+  ord_names <- names(sil_res[["labels"]])
+
+  caption_text <- sprintf(
+    "n=%d  var=%.3f  sil=%.3f",
+    sil_res[["metric"]][["n_gene"]],
+    sil_res[["metric"]][["var"]],
+    sil_res[["metric"]][["silhouette"]]
+  )
+
+  param_id <- make_param_id(cor_cut, sil_cut)
+
+  # Create correlation heatmap
+  cor_sub <- downsample_cor(cor_mat[ord_names, ord_names], max_dim = max_dim)
+  heat_names <- rownames(cor_sub)
+  cor_df <- cor_sub %>%
+    as.data.frame() %>%
+    rownames_to_column("row_gene") %>%
+    pivot_longer(-.data$row_gene, names_to = "col_gene", values_to = "correlation") %>%
+    mutate(
+      row_gene = factor(.data$row_gene, levels = heat_names),
+      col_gene = factor(.data$col_gene, levels = heat_names)
+    )
+
+  heat_plot <- ggplot(cor_df, aes(cor_df$col_gene, cor_df$row_gene, fill = cor_df$correlation)) +
+    geom_tile() +
+    scale_fill_gradient2(
+      low = "blue", mid = "white", high = "red",
+      midpoint = 0, limits = c(-1, 1)
+    ) +
+    coord_cartesian(expand = FALSE) +
+    labs(caption = caption_text) +
+    guides(fill = "none") +
+    theme_void() +
+    theme(plot.caption = element_text(size = 4, hjust = 0.5, margin = margin(t = 1)))
+
+  ggsave(file.path(outdir,"heatmap",paste0(param_id,".png")),
+         plot = heat_plot, width = size_px, height = size_px, units = "px",
+         device = ragg::agg_png)
+  rm(cor_sub)
+  rm(cor_df)
+  rm(heat_plot)
+
+  # Create main cluster plot
+  main_annot_df <- tibble(
+    col_gene = factor(ord_names, levels = ord_names),
+    cluster = factor(sil_res[["labels"]][ord_names])
+  )
+
+  main_annot_plot <- ggplot(main_annot_df, aes(main_annot_df$col_gene, 1, fill = main_annot_df$cluster)) +
+    geom_tile() +
+    coord_cartesian(expand = FALSE) +
+    guides(fill = "none") +
+    theme_void()
+
+  ggsave(file.path(outdir,"annotation_main",paste0(param_id,".png")),
+         plot = main_annot_plot, width = size_px, height = 50, units = "px",
+         device = ragg::agg_png)
+  rm(main_annot_df)
+  rm(main_annot_plot)
+
+  # Create alt cluster plot
+  alt_annot_df <- tibble(
+    col_gene = factor(ord_names, levels = ord_names),
+    cluster = factor(sil_res[["alt_labels"]][ord_names])
+  )
+
+  alt_annot_plot <- ggplot(alt_annot_df, aes(alt_annot_df$col_gene, 1, fill = alt_annot_df$cluster)) +
+    geom_tile() +
+    coord_cartesian(expand = FALSE) +
+    guides(fill = "none") +
+    theme_void()
+
+  ggsave(file.path(outdir,"annotation_alt",paste0(param_id,".png")),
+         plot = alt_annot_plot, width = size_px, height = 50, units = "px",
+         device = ragg::agg_png)
+  rm(alt_annot_df)
+  rm(alt_annot_plot)
+
+  return()
+}
+
+
+#' Make parameter file ID
+#'
+#' @param cor_cut Numeric value of correlation parameter
+#' @param sil_cut Numeric value of silhouette parameter
+#'
+#' @returns Transformed, formatted parameter ID
+#'
+#' @export
+
+make_param_id <- function(
+
+  cor_cut,
+  sil_cut
+
+  ) {
+  fmt <- function(x) {
+    x <- formatC(as.numeric(x), format = "f", digits = 2)
+    x <- gsub("-", "n", x)
+    gsub("\\.", "p", x)
+  }
+  paste0("cor", fmt(cor_cut), "_sil", fmt(sil_cut))
+}
+
+
+#' Downsample large plot data
+#'
+#' @param sub_mat A subsetting matrix
+#' @param max_dim Maximum dimensions for the matrix
+#'
+#' @returns A downsampled matrix for rasterization
+#'
+#' @export
+
+downsample_cor <- function(
+
+  sub_mat,
+  max_dim
+
+  ) {
+  n <- nrow(sub_mat)
+  if (n <= max_dim) return(sub_mat)
+
+  bin <- pmin(findInterval(seq_len(n), seq(1, n, length.out = max_dim + 1),
+                           rightmost.closed = TRUE), max_dim)
+  bin_size <- tabulate(bin, nbins = max_dim)
+
+  row_avg <- rowsum(sub_mat, bin) / bin_size
+  binned <- rowsum(t(row_avg), bin) / bin_size
+
+  block_names <- sprintf("b%03d", seq_len(max_dim))
+  dimnames(binned) <- list(block_names, block_names)
+  binned
+}
