@@ -215,6 +215,8 @@ scan_index <- function(
 #' @param set_workers An integer to set the amount of parallel workers used in plot generation.
 #' @param verbose Optional TRUE/FALSE to print progress along iterations.
 #'
+#' @returns Locally saved results to data/group_condition and images to images/group_condition
+#'
 #' @export
 
 wrap_app_inputs <- function(
@@ -263,4 +265,18 @@ wrap_app_inputs <- function(
   )
 
   return(paste("Finished gnerating app data for", group_file))
+}
+
+
+#' Run shiny app
+#'
+#' This function sources and wraps app.R to display the web app
+#'
+#' @returns A locally run instance of the shiny app
+
+launch_tiABBA <- function() {
+  addResourcePath("images", normalizePath("images"))
+
+  app_dir <- system.file("app.R", package = "tiABBA")
+  runApp(app_dir)
 }

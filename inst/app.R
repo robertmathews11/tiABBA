@@ -1,8 +1,8 @@
 # Serve the pre-rendered PNGs as static files instead of reading/decoding
 # them in R on every render. Files under images/<group>_<condition>/<file_id>
 # become reachable at /images/<group>_<condition>/<file_id>.
-addResourcePath("images", normalizePath("images"))
-source("plot_functions.R")
+#addResourcePath("images", normalizePath("images"))
+library(tiABBA)
 
 # Some cor_cut values are skipped during the scan because they produce a
 # gene set identical to the previous cut, so no panel is saved for them
@@ -583,4 +583,4 @@ server <- function(input, output, session){
 
 }
 
-shinyApp(ui, server)
+#shinyApp(ui, server)

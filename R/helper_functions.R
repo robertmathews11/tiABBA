@@ -55,7 +55,8 @@ prepare_expr <- function(
   ) {
 
   # Pull time points to be mapped
-  time_points <- str_split_i(colnames(expr), pattern = split_pattern, i = split_index)
+  time_points <- str_split_i(colnames(expr), pattern = split_pattern, i = split_index) %>%
+    unique()
 
   if(!is.null(time_seq) & length(time_seq) != length(time_points)){
     stop("Error: time_seq input does not match length of averaged columns")
@@ -101,6 +102,8 @@ normalize_rows <- function(
   expr
 
   ) {
+  expr <- as.data.frame(expr)
+
   # Apply normalization to each row
   normalized_expr <- t(apply(expr, 1, function(row) {
     min_val <- min(row)

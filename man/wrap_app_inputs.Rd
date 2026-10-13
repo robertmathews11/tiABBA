@@ -28,6 +28,9 @@ wrap_app_inputs(
 
 \item{verbose}{Optional TRUE/FALSE to print progress along iterations.}
 }
+\value{
+Locally saved results to data/group_condition and images to images/group_condition
+}
 \description{
 This function is a wrapper for other functions to create app data based off initial data
 }
