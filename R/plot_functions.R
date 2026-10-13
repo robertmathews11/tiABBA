@@ -1,4 +1,18 @@
-prepare_time <- function(input_expression){
+#' Prepare time data
+#'
+#' This function prepares time expression for group-mean plotting
+#'
+#' @param input_expression A matrix or data.frame object with rows and genes and columns as time points
+#'
+#' @returns A data.frame object formatted for use in [tiABBA::time_plot]
+#'
+#' @export
+
+prepare_time <- function(
+
+  input_expression
+
+  ) {
   # Process individual cluster group
   gene_count <- nrow(input_expression)
 
@@ -17,7 +31,23 @@ prepare_time <- function(input_expression){
   return(res)
 }
 
-time_plot <- function(input_time_data, ...){
+
+#' Plot time data
+#'
+#' @param input_time_data A data.frame object prepared with [tiABBA::prepare_time]
+#' @param ... Additional parameters passed on to ggplot elements
+#'
+#' @returns One png line plot for group-mean expression
+#'
+#' @export
+
+time_plot <- function(
+
+  input_time_data,
+
+  ...
+
+  ) {
 
 
   element_time_base(data = input_time_data, ...) +
@@ -30,13 +60,52 @@ time_plot <- function(input_time_data, ...){
     element_time_breaks() +
     element_time_theme()
 }
-element_time_base <- function(data, x = data$time, y = data$expression, group = NULL, color = NULL,
-                              linewidth = NULL, linetype = NULL) {
+
+
+#' Element plot base
+#'
+#' @param data A data.frame input to build the basic ggplot from
+#' @param x The x aes in ggplot
+#' @param y The y aes in ggplot
+#' @param group Designates the column which identifies group to connect the geom_line
+#' @param color Designates the column which identifies color in scale_color_identity
+#' @param linewidth Designates the column which identifies linewidth in scale_linewidth_identity
+#' @param linetype Designates the column which identifies linetype in scale_linetype_identity
+#'
+#' @returns A ggplot frame
+#'
+#' @export
+
+element_time_base <- function(
+
+  data,
+  x = data$time,
+  y = data$expression,
+  group = NULL,
+  color = NULL,
+  linewidth = NULL,
+  linetype = NULL
+
+  ) {
   ggplot(data, aes(x = {{ x }}, y = {{ y }}, group = {{ group }},
                    color = {{ color }}, fill = {{ color }},
                    linewidth = {{ linewidth }}, linetype = {{ linetype }}))
 }
-element_time_background <- function(condition = "none"){
+
+
+#' Element plot background
+#'
+#' @param condition Optional parameter used to tune condition-specific contextual backgrounds
+#'
+#' @returns Adds a background to the [tiABBA::element_time_base] frame
+#'
+#' @export
+
+element_time_background <- function(
+
+  condition = "none"
+
+  ) {
   list(
     annotate("rect", xmin = 12, xmax = 24, ymin = -1, ymax = 1, fill = "gray50", alpha = 0.5),
     annotate("rect", xmin = 0, xmax = 12, ymin = -1, ymax = 1, fill = "gray90", alpha = 0.5),
@@ -49,7 +118,24 @@ element_time_background <- function(condition = "none"){
   )
 }
 
-element_time_ribbon <- function(ymin, ymax, set_alpha = 0.3){
+
+#' Element geom_ribbon
+#'
+#' @param ymin Lower boundary of the geom_ribbon
+#' @param ymax Upper boundary of the geom_ribbon
+#' @param set_alpha transparency of the geom_ribbon
+#'
+#' @returns Adds a geom_ribbon to the [tiABBA::element_time_base] frame
+#'
+#' @export
+
+element_time_ribbon <- function(
+
+  ymin,
+  ymax,
+  set_alpha = 0.3
+
+  ) {
   list(
     geom_ribbon(
       aes(ymin = pmax(ymin, -1), ymax = pmin(ymax, 1)),
@@ -59,7 +145,15 @@ element_time_ribbon <- function(ymin, ymax, set_alpha = 0.3){
     scale_fill_identity()
   )
 }
-element_time_line <- function(){
+
+
+#' Element geom_line
+#'
+#' @returns Adds a geom_line to the [tiABBA::element_time_base] frame
+#'
+#' @export
+
+element_time_line <- function() {
   list(
     geom_line(),
     scale_color_identity(),
@@ -68,13 +162,31 @@ element_time_line <- function(){
   )
 }
 
-element_time_breaks <- function(){
+
+#' Element axis scales
+#'
+#' @returns Adjusts the axis scales and breaks in the [tiABBA::element_time_base] frame
+#'
+#' @export
+
+element_time_breaks <- function() {
   list(
     scale_x_continuous(breaks = c(0, 4, 8, 12, 16, 20,24,28,32), limits = c(0, 32)),
     scale_y_continuous(breaks = c(-1,0,1)),
     coord_cartesian(ylim = c(-1,1))
   )
 }
+
+
+#' Element plot theme
+#'
+#' @param x_lab Label to be used in the x axis
+#' @param y_lab Label to be used in the y axis
+#'
+#' @returns Adjusts the theme and axis labels in the [tiABBA::element_time_base] frame
+#'
+#' @export
+
 element_time_theme <- function(x_lab = NULL, y_lab = NULL){
   list(
     theme_minimal(),
@@ -87,7 +199,26 @@ element_time_theme <- function(x_lab = NULL, y_lab = NULL){
   )
 }
 
-make_violin_plot <- function(input_data, input_threshold, group_i) {
+
+#' Violin plot creation
+#'
+#' This function creates a violin plot based on relative rankings of the parameter scan
+#'
+#' @param input_data A data.frame object contained indexed results from [tiABBA::scan_index]
+#' @param input_threshold The value to be compared against other results, such as percent genes retained
+#' @param group_i The metric being compared
+#'
+#' @returns A geom_violin plot
+#'
+#' @export
+
+make_violin_plot <- function(
+
+  input_data,
+  input_threshold,
+  group_i
+
+  ) {
 
   good_above <- c(eigen = FALSE, gene = TRUE, sil = TRUE, var = FALSE)
   group_colors <- c(
@@ -144,6 +275,17 @@ make_violin_plot <- function(input_data, input_threshold, group_i) {
           panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank())
 }
+
+
+#' Find IQR
+#'
+#' This function assists with quickly finding the IQR of a vector
+#'
+#' @param input_vector A numeric vector object
+#'
+#' @returns Two values containing the IQR - 1.5Q1 and IQR + 1.5Q3
+#'
+#' @export
 
 find_iqr <- function(input_vector){
   iqr <- IQR(input_vector)
