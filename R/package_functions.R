@@ -275,6 +275,8 @@ wrap_app_inputs <- function(
 #' @param results_dir A string file.path which connects the app to the saved results. Uses root directory by default.
 #'
 #' @returns A locally run instance of the shiny app
+#'
+#' @export
 
 launch_tiABBA <- function(
 
