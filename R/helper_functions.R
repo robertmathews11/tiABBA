@@ -37,9 +37,6 @@ prepare_directory <- function(
 #'
 #' @param expr A data frame or matrix object, with rows of gene expression readings and columns of sample-time names.
 #' @param group_file String for directory for the group_condition combination. Format as group_condition.
-#' @param time_seq An optional numeric vector to generate ZT time points as column names, i.e.: 0,2,4 ....
-#' @param split_pattern A string for the pattern by which the column names will be split using [stringr::str_split_i()]. Default is formatted for sample_time.
-#' @param split_index Numeric index for retreiving time points after applying [stringr::str_split_i()].
 #'
 #' @return A data frame matching the input row length, and columns averaged by time point
 #'
@@ -48,41 +45,16 @@ prepare_directory <- function(
 prepare_expr <- function(
 
   expr,
-  group_file,
-  time_seq = NULL,
-  split_pattern = "_",
-  split_index = 2
+  group_file
 
   ) {
 
-  # Pull time points to be mapped
-  time_points <- str_split_i(colnames(expr), pattern = split_pattern, i = split_index) %>%
-    unique()
+  if(!"matrix" %in% class(expr)){stop("Error: Please input a matrix class object")}
 
-  if(!is.null(time_seq) & length(time_seq) != length(time_points)){
-    stop("Error: time_seq input does not match length of averaged columns")
-  }
-
-  # Normalize data by time point
-  norm_data <- map(time_points, \(time_i){
-    pull_res <- expr[,str_detect(colnames(expr), time_i)]
-    pull_res <- apply(pull_res, 1, mean)
-
-    return(pull_res)
-  }) %>%
-    list_cbind() %>%
-    normalize_rows()
-
-  # Set column names
-  if(!is.null(time_seq)){
-    create_names <- str_c("zt_", time_seq)
-    colnames(norm_data) <- create_names
-  }else{
-    colnames(norm_data) <- time_points
-  }
+  res <- normalize_rows(expr)
 
   # Save data
-  saveRDS(norm_data, file.path("app/data", group_file, "expression"))
+  saveRDS(res, file.path("app/data", group_file, "expression"))
 
   return(paste("Finished Time Normalization, saved to", file.path("app/data",group_file,"expression")))
 }

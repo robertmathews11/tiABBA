@@ -4,24 +4,12 @@
 \alias{prepare_expr}
 \title{Prepare expression data}
 \usage{
-prepare_expr(
-  expr,
-  group_file,
-  time_seq = NULL,
-  split_pattern = "_",
-  split_index = 2
-)
+prepare_expr(expr, group_file)
 }
 \arguments{
 \item{expr}{A data frame or matrix object, with rows of gene expression readings and columns of sample-time names.}
 
 \item{group_file}{String for directory for the group_condition combination. Format as group_condition.}
-
-\item{time_seq}{An optional numeric vector to generate ZT time points as column names, i.e.: 0,2,4 ....}
-
-\item{split_pattern}{A string for the pattern by which the column names will be split using \code{\link[stringr:str_split_i]{stringr::str_split_i()}}. Default is formatted for sample_time.}
-
-\item{split_index}{Numeric index for retreiving time points after applying \code{\link[stringr:str_split_i]{stringr::str_split_i()}}.}
 }
 \value{
 A data frame matching the input row length, and columns averaged by time point
