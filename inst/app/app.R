@@ -1,5 +1,15 @@
 #addResourcePath("images", normalizePath("images"))
 library(tiABBA)
+library(shiny)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(purrr)
+library(scales)
+library(ggplot2)
+library(patchwork)
+library(generics)
 
 locf_lookup <- function(query, existing) {
   existing_num <- as.numeric(existing)
