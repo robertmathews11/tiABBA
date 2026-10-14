@@ -410,7 +410,7 @@ server <- function(input, output, session){
         output[[paste0("top_time_", id)]] <- renderPlot({
           dat <- dat_all %>% filter(param_id == key_local)
           color_res <- setNames(dat$color, dat$cluster)
-          time_plot(dat, group = cluster, color = color_res, linewidth = 1.8)
+          supressWarnings(time_plot(dat, group = cluster, color = color_res, linewidth = 1.8))
         })
       })
     }
@@ -496,11 +496,11 @@ server <- function(input, output, session){
         mutate(threshold = value)
 
       # Create 4 plots
-      map(names(group_colors), \(g_i){
+       supressWarnings(map(names(group_colors), \(g_i){
         make_violin_plot(index_res,
                          pull_res %>% filter(group == g_i),
                          g_i)
-      }) %>% set_names(names(group_colors))
+      }) %>% set_names(names(group_colors)))
     })
   })
 
@@ -562,7 +562,7 @@ server <- function(input, output, session){
         output[[paste0("expr_plot_", id)]] <- renderPlot({
           dat <- expr_res %>% filter(param_id == key_local)
           color_res <- setNames(dat$color, dat$cluster)
-          time_plot(dat, group = cluster, color = color_res, linewidth = 1.8)
+          supressWarnings(time_plot(dat, group = cluster, color = color_res, linewidth = 1.8))
         })
 
         output[[paste0("hist_plot_", id)]] <- renderPlot({
