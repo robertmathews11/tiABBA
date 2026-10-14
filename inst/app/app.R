@@ -70,11 +70,16 @@ cluster_option <- c("Silhouette Clusters", "Dynamic Clusters")
 ui <- fluidPage(
     sidebarLayout(
       sidebarPanel(
+        # Shared across both tabs so selection state stays in sync
+        selectInput("group", "Group:", choices = group_option),
+        selectInput("condition", "Condition:", choices = condition_option),
+        selectInput("cluster_type", "Assignment:", choices = cluster_option),
+        actionButton("clear_selection", "Clear selection"),
+
         # Only relevant to the Scan Results tab; hidden while on Visualize Group
         conditionalPanel(
           condition = "input.main_tabs == 'Scan Results'",
-          selectInput("group", "Group:", choices = group_option),
-          selectInput("condition", "Condition:", choices = condition_option),
+
           ## Maybe have it as some scrolling window instead of a target pointer
           sliderInput("zoom_cor","Correlation Zoom:", min = 0.01, max = 0.1, step = 0.01,
                       value = 0.1, ticks = F),
@@ -84,10 +89,8 @@ ui <- fluidPage(
                       value = 0.2, ticks = F),
           sliderInput("limit_sil", "Silhouette Limit:", min = -0.50, max = 0.70, step = 0.01,
                       value = c(-0.50, 0.70))
-        ),
-        # Shared across both tabs so selection state stays in sync
-        selectInput("cluster_type", "Assignment:", choices = cluster_option),
-        actionButton("clear_selection", "Clear selection")
+        )
+
       ),
       mainPanel(
         tabsetPanel(
