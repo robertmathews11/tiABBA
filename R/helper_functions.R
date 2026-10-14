@@ -14,11 +14,12 @@ prepare_directory <- function(
 
   ) {
 
-  if(!dir.exists("data")){dir.create("data")}
-  if(!dir.exists("images")){dir.create("images")}
+  if(!dir.exists("app")){dir.create("app")}
+  if(!dir.exists("app/data")){dir.create("app/data")}
+  if(!dir.exists("app/images")){dir.create("app/images")}
 
-  outdir <- file.path("data", group_file)
-  filedir <- file.path("images", group_file)
+  outdir <- file.path("app/data", group_file)
+  filedir <- file.path("app/images", group_file)
   if(!dir.exists(outdir)){dir.create(outdir)}
   if(!dir.exists(filedir)){dir.create(filedir)}
 
@@ -81,9 +82,9 @@ prepare_expr <- function(
   }
 
   # Save data
-  saveRDS(norm_data, file.path("data", group_file, "expression"))
+  saveRDS(norm_data, file.path("app/data", group_file, "expression"))
 
-  return(paste("Finished Time Normalization, saved to", file.path("data",group_file,"expression")))
+  return(paste("Finished Time Normalization, saved to", file.path("app/data",group_file,"expression")))
 }
 
 
@@ -102,8 +103,6 @@ normalize_rows <- function(
   expr
 
   ) {
-  expr <- as.data.frame(expr)
-
   # Apply normalization to each row
   normalized_expr <- t(apply(expr, 1, function(row) {
     min_val <- min(row)

@@ -1,7 +1,7 @@
 Package: tiABBA
 Type: Package
 Title: totoInferno Atlas of Biological Bicor Analyses (tiABBA)
-Version: 1.1.0
+Version: 1.2.0
 Authors@R: c(
     person(
       "Robert", "Mathews",

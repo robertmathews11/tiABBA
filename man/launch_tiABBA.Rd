@@ -4,7 +4,10 @@
 \alias{launch_tiABBA}
 \title{Run shiny app}
 \usage{
-launch_tiABBA()
+launch_tiABBA(results_dir = "app")
+}
+\arguments{
+\item{results_dir}{A string file.path which connects the app to the saved results. Uses root directory by default.}
 }
 \value{
 A locally run instance of the shiny app
