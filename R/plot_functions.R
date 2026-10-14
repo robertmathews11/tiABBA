@@ -50,7 +50,7 @@ time_plot <- function(
   ) {
 
 
-  element_time_base(data = input_time_data, ...) +
+  res <- element_time_base(data = input_time_data, ...) +
     element_time_background(condition = unique(input_time_data$condition)) +
     element_time_ribbon(
       ymin = (input_time_data[["expression"]] - input_time_data[["var"]]),
@@ -59,6 +59,8 @@ time_plot <- function(
     element_time_line() +
     element_time_breaks() +
     element_time_theme()
+
+  suppressWarnings(print(res))
 }
 
 
@@ -258,7 +260,7 @@ make_violin_plot <- function(
                      find_above, "% Rank", "\n\n",
                      round(threshold, 3))
 
-  ggplot() +
+  res <- ggplot() +
     geom_ribbon(data = bad_df, aes(y = bad_df$y, xmin = -bad_df$width, xmax = bad_df$width),
                 orientation = "y", fill = "#CCCCCC") +
     geom_ribbon(data = good_df, aes(y = good_df$y, xmin = -good_df$width, xmax = good_df$width),
@@ -274,6 +276,8 @@ make_violin_plot <- function(
           axis.text.y = element_text(size = rel(1.1)),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank())
+
+  suppressWarnings(print(res))
 }
 
 
