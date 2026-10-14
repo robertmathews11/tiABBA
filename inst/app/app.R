@@ -1,4 +1,5 @@
 #addResourcePath("images", normalizePath("images"))
+library(tiABBA)
 
 locf_lookup <- function(query, existing) {
   existing_num <- as.numeric(existing)
