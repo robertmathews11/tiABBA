@@ -96,7 +96,6 @@ ui <- fluidPage(
         tabsetPanel(
           id = "main_tabs",
           tabPanel("Scan Results",
-                   textOutput("filepath"),
                    textOutput("seq_cor"),
                    textOutput("seq_sil"),
                    uiOutput("plot_grid") ## Use this as the grouped plots
@@ -146,7 +145,6 @@ server <- function(input, output, session){
   # Display the histograms
   # Selecting multiple plots
 
-  output$filepath <- renderText(setdir())
   output$seq_cor <- renderText({
     grid <- make_grid()
     paste0("Cor Row: ", length(grid[[1]]), ", Sil Col: ", length(grid[[2]]))
