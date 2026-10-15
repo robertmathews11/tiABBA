@@ -25,7 +25,7 @@ normalize_key <- function(x) as.character(as.numeric(x))
 make_image_cell <- function(match_row, cor_val, sil_val, label = NULL, is_top = FALSE,
                              is_selected = FALSE, cluster_annotation = "Silhouette Clusters") {
   if (nrow(match_row) == 0) {
-    return(div(style = "background: #eee; min-width: 120px; min-height: 120px;"))
+    return(div(style = "background: #eee; min-width: 150px; min-height: 150px;"))
   }
 
   annotation_url <- if (cluster_annotation == "Silhouette Clusters") {
@@ -39,7 +39,7 @@ make_image_cell <- function(match_row, cor_val, sil_val, label = NULL, is_top = 
   cell_style <- sprintf(
     paste(
       "display: flex; flex-direction: column; width: 100%%;",
-      "min-width: 120px; min-height: 120px; cursor: pointer;",
+      "min-width: 150px; min-height: 150px; cursor: pointer;",
       "background: %s; padding: 10px; box-sizing: border-box;"
     ),
     bg
@@ -279,7 +279,7 @@ server <- function(input, output, session){
 
     div(
       style = sprintf(
-        "display: grid; grid-template-columns: auto repeat(%d, minmax(120px, 1fr)); gap: 2px; align-items: center;",
+        "display: grid; grid-template-columns: auto repeat(%d, minmax(150px, 1fr)); gap: 2px; align-items: center;",
         length(sils)
       ),
       header_cells,
@@ -329,15 +329,15 @@ server <- function(input, output, session){
       )
 
       time_cell <- div(
-        style = "min-width: 170px;",
-        plotOutput(paste0("top_time_", safe_id(key)), height = "170px")
+        style = "min-width: 200px;",
+        plotOutput(paste0("top_time_", safe_id(key)), height = "200px")
       )
 
       list(row_label, low_cell, top_cell, high_cell, time_cell)
     })
 
     div(
-      style = "display: grid; grid-template-columns: auto repeat(3, minmax(120px, 1fr)) minmax(170px, 1fr); gap: 2px; align-items: center;",
+      style = "display: grid; grid-template-columns: auto repeat(3, minmax(150px, 1fr)) minmax(200px, 1fr); gap: 2px; align-items: center;",
       header_cells,
       body_cells
     )
