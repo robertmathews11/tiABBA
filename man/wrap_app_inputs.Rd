@@ -9,6 +9,8 @@ wrap_app_inputs(
   group_file,
   cor_seq = seq(0.1, 0.4, by = 0.01),
   sil_seq = seq(-0.5, 0.7, by = 0.01),
+  k_max = 8L,
+  parallel_silhouette = FALSE,
   set_workers = {
      detectCores() - 1
  },
@@ -23,6 +25,10 @@ wrap_app_inputs(
 \item{cor_seq}{A sequence of correlation filters to run on the data. Default value is the recommended range.}
 
 \item{sil_seq}{A sequence of silhouette filters to run on the data. Default value is the recommended range.}
+
+\item{k_max}{The maximum cluster amount to test. Results greater than 8 clusters may break plotting, along with being must more expensive to run.}
+
+\item{parallel_silhouette}{FALSE or an integer setting the number of cores to use in parallel processing. Recommended to use \link[parallel:detectCores]{parallel::detectCores} and not exceed free memory divided by maximum object size.}
 
 \item{set_workers}{An integer to set the amount of parallel workers used in plot generation.}
 

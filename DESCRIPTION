@@ -41,5 +41,6 @@ Imports:
     tidyselect,
     scales,
     generics,
-    htmltools
+    htmltools,
+    utils
 Roxygen: list(markdown = TRUE)

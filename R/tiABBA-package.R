@@ -22,6 +22,7 @@
 #' @importFrom scales hue_pal
 #' @importFrom tidyselect starts_with
 #' @importFrom patchwork wrap_plots
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @import shiny
 #' @import rlang
 

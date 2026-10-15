@@ -127,3 +127,7 @@ importFrom(totoInferno,
   cor_filter,
   silhouette_filter
 )
+importFrom(utils,
+  setTxtProgressBar,
+  txtProgressBar
+)

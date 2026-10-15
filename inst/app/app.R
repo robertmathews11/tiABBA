@@ -6,7 +6,7 @@ library(dplyr)
 library(tidyr)
 library(tibble)
 library(purrr)
-library(scales)
+library(RColorBrewer)
 library(ggplot2)
 library(patchwork)
 library(generics)
@@ -383,9 +383,12 @@ server <- function(input, output, session){
       } else {
         res[["alt_labels"]]
       }
-
       clusters <- sort(unique(labels))
-      palette <- setNames(hue_pal()(length(clusters)), clusters)
+      palette <- if (cluster_annotation == "Silhouette Clusters") {
+        setNames(brewer.pal(8, "Dark2")[seq(1:length(clusters))], clusters)
+      } else {
+        setNames(brewer.pal(8, "Set1")[seq(1:length(clusters))], clusters)
+      }
 
       imap_dfr(split(names(labels), labels), \(genes, cluster_id){
         sub_expr <- expr_mat[intersect(genes, rownames(expr_mat)), , drop = FALSE]
@@ -454,7 +457,11 @@ server <- function(input, output, session){
       }
 
       clusters <- sort(unique(labels))
-      palette <- setNames(hue_pal()(length(clusters)), clusters)
+      palette <- if (cluster_annotation == "Silhouette Clusters") {
+        setNames(brewer.pal(8, "Dark2")[seq(1:length(clusters))], clusters)
+      } else {
+        setNames(brewer.pal(8, "Set1")[seq(1:length(clusters))], clusters)
+      }
 
       imap_dfr(split(names(labels), labels), \(genes, cluster_id){
         sub_expr <- expr_mat[intersect(genes, rownames(expr_mat)), , drop = FALSE]

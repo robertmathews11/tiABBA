@@ -9,6 +9,8 @@ scan_silhouette(
   cor_res,
   sil_seq = seq(-0.5, 0.7, by = 0.01),
   group_file,
+  k_max = 8L,
+  run_parallel = FALSE,
   verbose = TRUE
 )
 }
@@ -20,6 +22,10 @@ scan_silhouette(
 \item{sil_seq}{A sequence of silhouette filters to run on the data. Default value is the recommended range.}
 
 \item{group_file}{String for directory for the group_condition combination. Format as group_condition.}
+
+\item{k_max}{The maximum cluster amount to test. Results greater than 8 clusters may break plotting, along with being must more expensive to run.}
+
+\item{run_parallel}{FALSE or an integer setting the number of cores to use in parallel processing. Recommended to use \link[parallel:detectCores]{parallel::detectCores} and not exceed free memory divided by maximum object size.}
 
 \item{verbose}{Optional TRUE/FALSE to print progress along iterations.}
 }

@@ -8,7 +8,7 @@ scan_correlation(
   expr,
   cor_seq = seq(0.1, 0.4, by = 0.01),
   group_file,
-  verbose = FALSE
+  verbose = TRUE
 )
 }
 \arguments{

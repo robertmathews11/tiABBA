@@ -16,7 +16,7 @@ scan_correlation <- function(
   expr,
   cor_seq = seq(.1, .4, by = .01),
   group_file,
-  verbose = FALSE
+  verbose = TRUE
 
   ) {
   if(!"matrix" %in% class(expr)){stop("Error: Please input a matrix class object")}
@@ -24,19 +24,21 @@ scan_correlation <- function(
   expr <- as.matrix(expr)
   cor_res <- list()
   cor_data <- expr
+  if(verbose == TRUE){progress_bar <- txtProgressBar(min = 0, max = length(cor_seq), initial = 0)}
   for(i in seq_along(cor_seq)){
-    if(verbose == TRUE){print(i)}
     res_i <- tryCatch(cor_filter(expr = cor_data,
                                  cor_threshold = cor_seq[i],
                                  return_output = "expr"),
 
                       error = function(e) NULL)
 
+    if(verbose == TRUE){setTxtProgressBar(progress_bar, i)}
     if(!is.null(res_i)){
       cor_res[[str_c(cor_seq[i])]] <- row.names(res_i)
       cor_data <- cor_data[row.names(res_i), , drop = FALSE]
     }else{break}
   }
+  if(verbose == TRUE){close(progress_bar)}
   rm(cor_data)
 
 
@@ -59,6 +61,8 @@ scan_correlation <- function(
 #' @param cor_res A list containing the results from [tiABBA::scan_correlation]
 #' @param sil_seq A sequence of silhouette filters to run on the data. Default value is the recommended range.
 #' @param group_file String for directory for the group_condition combination. Format as group_condition.
+#' @param k_max The maximum cluster amount to test. Results greater than 8 clusters may break plotting, along with being must more expensive to run.
+#' @param run_parallel FALSE or an integer setting the number of cores to use in parallel processing. Recommended to use [parallel::detectCores] and not exceed free memory divided by maximum object size.
 #' @param verbose Optional TRUE/FALSE to print progress along iterations.
 #'
 #' @returns A list object with multiple levels: correlation parameter, silhouette parameter, then results
@@ -71,6 +75,8 @@ scan_silhouette <- function(
   cor_res,
   sil_seq = seq(-.5, .7, by = .01),
   group_file,
+  k_max = 8L,
+  run_parallel = FALSE,
   verbose = TRUE
 
   ) {
@@ -79,6 +85,7 @@ scan_silhouette <- function(
   ## Run silhouette, output panels
   sil_seq = seq(-.5, .7, by = .01)
 
+  if(run_parallel == FALSE){
   sil_res <- imap(cor_res, \(cor_i, cor_name) {
     cor_filter <- expr[cor_i, , drop = FALSE]
     pre_cor <- cor(t(cor_filter), method = "pearson")
@@ -87,7 +94,8 @@ scan_silhouette <- function(
     for(i in seq_along(sil_seq)){
       res_i <- tryCatch(silhouette_filter(expr = cor_filter,
                                           sil_threshold = sil_seq[i],
-                                          cor_expr = pre_cor),
+                                          cor_expr = pre_cor,
+                                          k_max = k_max),
 
                         error = function(e) NULL)
 
@@ -100,6 +108,32 @@ scan_silhouette <- function(
     }
     return(sil_res)
   }, .progress = {verbose})
+  }else{
+    plan(multisession, workers = run_parallel)
+    sil_res <- future_imap(cor_res, \(cor_i, cor_name) {
+      cor_filter <- expr[cor_i, , drop = FALSE]
+      pre_cor <- cor(t(cor_filter), method = "pearson")
+
+      sil_res <- list()
+      for(i in seq_along(sil_seq)){
+        res_i <- tryCatch(silhouette_filter(expr = cor_filter,
+                                            sil_threshold = sil_seq[i],
+                                            cor_expr = pre_cor,
+                                            k_max = 8L),
+
+                          error = function(e) NULL)
+
+        if(!is.null(res_i)){
+
+          sil_res[[str_c(sil_seq[i])]] <- filter_res(res_i)
+
+          cor_filter <- cor_filter[row.names(res_i[["expr"]]), , drop = FALSE]
+        }else{break}
+      }
+      return(sil_res)
+    }, .progress = {verbose})
+    plan(sequential)
+  }
 
   sil_res <- map(sil_res, \(res_i){
     correct_names <- names(res_i) %>%
@@ -212,6 +246,8 @@ scan_index <- function(
 #' @param group_file String for directory for the group_condition combination. Format as group_condition.
 #' @param cor_seq A sequence of correlation filters to run on the data. Default value is the recommended range.
 #' @param sil_seq A sequence of silhouette filters to run on the data. Default value is the recommended range.
+#' @param k_max The maximum cluster amount to test. Results greater than 8 clusters may break plotting, along with being must more expensive to run.
+#' @param parallel_silhouette FALSE or an integer setting the number of cores to use in parallel processing. Recommended to use [parallel::detectCores] and not exceed free memory divided by maximum object size.
 #' @param set_workers An integer to set the amount of parallel workers used in plot generation.
 #' @param verbose Optional TRUE/FALSE to print progress along iterations.
 #'
@@ -225,6 +261,8 @@ wrap_app_inputs <- function(
   group_file,
   cor_seq = seq(.1, .4, by = .01),
   sil_seq = seq(-.5, .7, by = .01),
+  k_max = 8L,
+  parallel_silhouette = FALSE,
   set_workers = {detectCores() - 1},
   verbose = TRUE
 
@@ -247,6 +285,8 @@ wrap_app_inputs <- function(
     cor_res = cor_res,
     sil_seq = sil_seq,
     group_file = group_file,
+    k_max = k_max,
+    run_parallel = parallel_silhouette,
     verbose = verbose
   )
 
