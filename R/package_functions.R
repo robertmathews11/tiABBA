@@ -185,7 +185,7 @@ scan_plot <- function(
   iwalk(sil_res, \(cor_i, cor_name){
 
     cor_genes <- cor_i %>%
-      map(\(res_j) names(res_j[["labels"]])) %>%
+      map(\(res_j) row.names(res_j[["labels"]])) %>%
       reduce(union)
 
     cor_sub <- cor_input[cor_genes, cor_genes]
