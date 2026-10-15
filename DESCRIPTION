@@ -1,7 +1,7 @@
 Package: tiABBA
 Type: Package
 Title: totoInferno Atlas of Biological Bicor Analyses (tiABBA)
-Version: 1.3.0
+Version: 1.3.1
 Authors@R: c(
     person(
       "Robert", "Mathews",
@@ -39,7 +39,6 @@ Imports:
     shiny,
     patchwork,
     tidyselect,
-    scales,
     generics,
     htmltools,
     utils

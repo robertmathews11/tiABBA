@@ -135,13 +135,28 @@ filter_res <- function(
   order_labels <- sil_res[["data"]][["labels_final"]][sil_res[["data"]][["hclust_final"]][["order"]]]
   res[["labels"]] <- order_labels
 
-  dynamic_cut <- cutreeHybrid(sil_res[["data"]][["hclust_final"]], distM = as.matrix(sil_res[["data"]][["dist_final"]]),
-                              verbose = 0, deepSplit = 0, minClusterSize = 5,
-                              minGap = .7)
-  alt_res <- setNames(dynamic_cut$labels, names(sil_res[["data"]][["labels_final"]]))
-  order_alt <- alt_res[sil_res[["data"]][["hclust_final"]][["order"]]]
+  gap_seq <- seq(.5, .9, by = 0.1)
+  dist_mat <- as.matrix(sil_res[["data"]][["dist_final"]])
 
-  res[["alt_labels"]] <- order_alt
+  dynamic_res <- map(gap_seq, \(gap_i){
+
+    dynamic_cut <- cutreeHybrid(sil_res[["data"]][["hclust_final"]], distM = dist_mat,
+                                verbose = 0, deepSplit = 0, minClusterSize = 5,
+                                minGap = gap_i)
+    alt_res <- setNames(dynamic_cut$labels, names(sil_res[["data"]][["labels_final"]]))
+    order_alt <- alt_res[sil_res[["data"]][["hclust_final"]][["order"]]]
+
+    return(order_alt)
+
+  }) %>%
+    setNames(str_c("gap_", str_replace(as.character(gap_seq), "\\.", "p"))) %>%
+    as.data.frame()
+
+
+  res[["labels"]] <- cbind(
+    data.frame(sil_k = order_labels, row.names = names(order_labels)),
+    dynamic_res
+  )
 
   return(res)
 }

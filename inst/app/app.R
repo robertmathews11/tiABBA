@@ -6,10 +6,11 @@ library(dplyr)
 library(tidyr)
 library(tibble)
 library(purrr)
-library(RColorBrewer)
 library(ggplot2)
 library(patchwork)
 library(generics)
+
+color_pal <- c("#88CCEEFF", "#CC6677FF", "#DDCC77FF", "#117733FF", "#332288FF", "#AA4499FF", "#44AA99FF", "#999933FF", "#882255FF", "#661100FF", "#6699CCFF", "#888888FF")
 
 locf_lookup <- function(query, existing) {
   existing_num <- as.numeric(existing)
@@ -43,16 +44,12 @@ filter_index <- function(input_index){
 }
 
 make_image_cell <- function(match_row, cor_val, sil_val, label = NULL, is_top = FALSE,
-                             is_selected = FALSE, cluster_annotation = "Silhouette Clusters") {
+                             is_selected = FALSE, cluster_annotation = "sil_k") {
   if (nrow(match_row) == 0) {
     return(div(style = "background: #eee; min-width: 150px; min-height: 150px;"))
   }
 
-  annotation_url <- if (cluster_annotation == "Silhouette Clusters") {
-    match_row$url_main[1]
-  } else {
-    match_row$url_alt[1]
-  }
+  annotation_url <- match_row[[cluster_annotation]][1]
 
   bg <- if (is_top) "#61FF76" else if (is_selected) "#CCCCCC" else "transparent"
 
@@ -85,7 +82,7 @@ make_image_cell <- function(match_row, cor_val, sil_val, label = NULL, is_top = 
 
 group_option <- list.files(file.path(getShinyOption("results_dir"),"data")) %>% str_split_i(pattern = "_", 1) %>% unique()
 condition_option <- list.files(file.path(getShinyOption("results_dir"),"data")) %>% str_split_i(pattern = "_", 2) %>% unique()
-cluster_option <- c("Silhouette Clusters", "Dynamic Clusters")
+cluster_option <- c("sil_k", "gap_0p5", "gap_0p6", "gap_0p7", "gap_0p8", "gap_0p9")
 
 ui <- fluidPage(
     sidebarLayout(
@@ -170,8 +167,12 @@ server <- function(input, output, session){
       mutate(
         file_id = str_replace(file_id, pattern = "\\s", replacement = ""),
         url_heatmap = file.path("images", setdir(), "heatmap", file_id),
-        url_main = file.path("images", setdir(), "annotation_main", file_id),
-        url_alt = file.path("images", setdir(), "annotation_alt", file_id)
+        url_sil_k = file.path("images", setdir(), "sil_k", file_id),
+        url_gap_0p5 = file.path("images", setdir(), "gap_0p5", file_id),
+        url_gap_0p6 = file.path("images", setdir(), "gap_0p6", file_id),
+        url_gap_0p7 = file.path("images", setdir(), "gap_0p7", file_id),
+        url_gap_0p8 = file.path("images", setdir(), "gap_0p8", file_id),
+        url_gap_0p9 = file.path("images", setdir(), "gap_0p9", file_id)
       )
   })
 
@@ -364,9 +365,9 @@ server <- function(input, output, session){
       }
       clusters <- sort(unique(labels))
       palette <- if (cluster_annotation == "Silhouette Clusters") {
-        setNames(brewer.pal(8, "Dark2")[seq(1:length(clusters))], clusters)
+        setNames(color_pal[seq(1:length(clusters))], clusters)
       } else {
-        setNames(brewer.pal(8, "Set1")[seq(1:length(clusters))], clusters)
+        setNames(color_pal[seq(1:length(clusters))], clusters)
       }
 
       imap_dfr(split(names(labels), labels), \(genes, cluster_id){
@@ -430,9 +431,9 @@ server <- function(input, output, session){
 
       clusters <- sort(unique(labels))
       palette <- if (cluster_annotation == "Silhouette Clusters") {
-        setNames(brewer.pal(8, "Dark2")[seq(1:length(clusters))], clusters)
+        setNames(color_pal[seq(1:length(clusters))], clusters)
       } else {
-        setNames(brewer.pal(8, "Set1")[seq(1:length(clusters))], clusters)
+        setNames(color_pal[seq(1:length(clusters))], clusters)
       }
 
       imap_dfr(split(names(labels), labels), \(genes, cluster_id){
@@ -583,8 +584,7 @@ server <- function(input, output, session){
 
       gene_tbl <- tibble(
         gene = names(res[["labels"]]),
-        silhouette_cluster = res[["labels"]],
-        dynamic_cluster = res[["alt_labels"]][names(res[["labels"]])]
+        cluster = res[["labels"]]
       )
 
       con <- file(file, open = "wt")

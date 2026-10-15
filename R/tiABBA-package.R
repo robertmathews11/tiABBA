@@ -19,7 +19,6 @@
 #' @importFrom parallel detectCores
 #' @importFrom htmltools div img
 #' @importFrom generics setdiff intersect
-#' @importFrom scales hue_pal
 #' @importFrom tidyselect starts_with
 #' @importFrom patchwork wrap_plots
 #' @importFrom utils txtProgressBar setTxtProgressBar
