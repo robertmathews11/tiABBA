@@ -246,7 +246,7 @@ render_panel <- function(sil_res, cor_mat,
       theme_void()
 
     ggsave(file.path(outdir,test_i,paste0(param_id,".png")),
-           plot = main_annot_plot, width = size_px, height = 50, units = "px",
+           plot = annot_plot, width = size_px, height = 50, units = "px",
            device = ragg::agg_png)
   })
 
