@@ -183,7 +183,7 @@ render_panel <- function(sil_res, cor_mat,
 
 
   # Prepare data for plotting
-  ord_names <- names(sil_res[["labels"]])
+  ord_names <- row.names(sil_res[["labels"]])
 
   caption_text <- sprintf(
     "n=%d  var=%.3f  sil=%.3f",
@@ -226,40 +226,25 @@ render_panel <- function(sil_res, cor_mat,
   rm(heat_plot)
 
   # Create main cluster plot
-  main_annot_df <- tibble(
-    col_gene = factor(ord_names, levels = ord_names),
-    cluster = factor(sil_res[["labels"]][ord_names])
-  )
+  cluster_types <- colnames(sil_res[["labels"]])
+  walk(cluster_types, \(test_i){
 
-  main_annot_plot <- ggplot(main_annot_df, aes(main_annot_df$col_gene, 1, fill = main_annot_df$cluster)) +
-    geom_tile() +
-    coord_cartesian(expand = FALSE) +
-    guides(fill = "none") +
-    theme_void()
+    pull_names <- sil_res[["labels"]] %>% select(test_i) %>% deframe()
+    annot_df <- tibble(
+      col_gene = factor(ord_names, levels = ord_names),
+      cluster = factor(pull_names[ord_names])
+    )
 
-  ggsave(file.path(outdir,"annotation_main",paste0(param_id,".png")),
-         plot = main_annot_plot, width = size_px, height = 50, units = "px",
-         device = ragg::agg_png)
-  rm(main_annot_df)
-  rm(main_annot_plot)
+    annot_plot <- ggplot(annot_df, aes(annot_df$col_gene, 1, fill = annot_df$cluster)) +
+      geom_tile() +
+      coord_cartesian(expand = FALSE) +
+      guides(fill = "none") +
+      theme_void()
 
-  # Create alt cluster plot
-  alt_annot_df <- tibble(
-    col_gene = factor(ord_names, levels = ord_names),
-    cluster = factor(sil_res[["alt_labels"]][ord_names])
-  )
-
-  alt_annot_plot <- ggplot(alt_annot_df, aes(alt_annot_df$col_gene, 1, fill = alt_annot_df$cluster)) +
-    geom_tile() +
-    coord_cartesian(expand = FALSE) +
-    guides(fill = "none") +
-    theme_void()
-
-  ggsave(file.path(outdir,"annotation_alt",paste0(param_id,".png")),
-         plot = alt_annot_plot, width = size_px, height = 50, units = "px",
-         device = ragg::agg_png)
-  rm(alt_annot_df)
-  rm(alt_annot_plot)
+    ggsave(file.path(outdir,test_i,paste0(param_id,".png")),
+           plot = main_annot_plot, width = size_px, height = 50, units = "px",
+           device = ragg::agg_png)
+  })
 
   return()
 }
