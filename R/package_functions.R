@@ -25,7 +25,7 @@ scan_correlation <- function(
   cor_res <- list()
   cor_data <- expr
   if(verbose == TRUE){
-    print("Running correlation scan: ")
+    cat("Running correlation scan: ")
     progress_bar <- txtProgressBar(min = 0, max = length(cor_seq), initial = 0, style = 3)
     }
   for(i in seq_along(cor_seq)){
@@ -88,7 +88,7 @@ scan_silhouette <- function(
   ## Run silhouette, output panels
   sil_seq = seq(-.5, .7, by = .01)
 
-  if(verbose == TRUE){print("Running silhouette scan: ")}
+  if(verbose == TRUE){cat("Running silhouette scan: ")}
   if(run_parallel == FALSE){
   sil_res <- imap(cor_res, \(cor_i, cor_name) {
     cor_filter <- expr[cor_i, , drop = FALSE]
@@ -180,7 +180,7 @@ scan_plot <- function(
   # Plot parameter results
   cor_input <- cor(t(expr), method = "pearson")
 
-  if(verbose == TRUE){print("Plotting results: ")}
+  if(verbose == TRUE){cat("Plotting results: ")}
   plan(multisession, workers = set_workers)
   iwalk(sil_res, \(cor_i, cor_name){
 
