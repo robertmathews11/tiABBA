@@ -22,6 +22,26 @@ locf_lookup <- function(query, existing) {
 
 normalize_key <- function(x) as.character(as.numeric(x))
 
+filter_index <- function(input_index){
+  res <- input_index %>%
+    mutate(
+      r_var = percent_rank(desc(m_var)),
+      r_gene = percent_rank(m_gene),
+      r_sil = percent_rank(m_sil),
+      r_eigen = percent_rank(m_eigen)
+    ) %>%
+      filter(r_var > 0.05 &
+               r_gene > 0.05 &
+               r_sil > 0.05 &
+               r_eigen > 0.05) %>%
+      mutate(r_var = percent_rank(desc(m_var)),
+             r_gene = percent_rank(m_gene),
+             r_sil = percent_rank(m_sil),
+             r_eigen = percent_rank(m_eigen),
+             r_total = (r_gene + sqrt(r_var + r_sil + r_eigen)))
+  return(res)
+}
+
 make_image_cell <- function(match_row, cor_val, sil_val, label = NULL, is_top = FALSE,
                              is_selected = FALSE, cluster_annotation = "Silhouette Clusters") {
   if (nrow(match_row) == 0) {
@@ -162,21 +182,7 @@ server <- function(input, output, session){
 
   top_res <- reactive({
     res <- index() %>%
-      mutate(
-        r_var = percent_rank(desc(m_var)),
-        r_gene = percent_rank(m_gene),
-        r_sil = percent_rank(m_sil),
-        r_eigen = percent_rank(m_eigen)
-      ) %>%
-      filter(r_var > 0.05 &
-               r_gene > 0.05 &
-               r_sil > 0.05 &
-               r_eigen > 0.05) %>%
-      mutate(r_var = percent_rank(desc(m_var)),
-             r_gene = percent_rank(m_gene),
-             r_sil = percent_rank(m_sil),
-             r_eigen = percent_rank(m_eigen),
-             r_total = (r_gene + sqrt(r_var + r_sil + r_eigen))) %>%
+      filter_index() %>%
       arrange(desc(r_total))
 
     res_filter <- res[!duplicated(res$cor),]
@@ -459,6 +465,14 @@ server <- function(input, output, session){
                    names_to = "group") %>%
       mutate(group = str_replace(group, "m_", "")) %>%
       mutate(group = factor(group))
+    index_plot <- index() %>%
+      filter_index() %>%
+      mutate(m_gene = (m_gene / 100)) %>%
+      select(!"file_id") %>%
+      pivot_longer(starts_with("m_"),
+                   names_to = "group") %>%
+      mutate(group = str_replace(group, "m_", "")) %>%
+      mutate(group = factor(group))
 
     # Map across selected results
     imap(selected_results(), \(res, key){
@@ -473,7 +487,7 @@ server <- function(input, output, session){
 
       # Create 4 plots
        suppressWarnings(map(names(group_colors), \(g_i){
-        make_violin_plot(index_res,
+        make_violin_plot(index_plot,
                          pull_res %>% filter(group == g_i),
                          g_i)
       }) %>% set_names(names(group_colors)))
