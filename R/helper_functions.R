@@ -24,8 +24,12 @@ prepare_directory <- function(
   if(!dir.exists(filedir)){dir.create(filedir)}
 
   if(!dir.exists(file.path(filedir,"heatmap"))){dir.create(file.path(filedir,"heatmap"))}
-  if(!dir.exists(file.path(filedir,"annotation_main"))){dir.create(file.path(filedir,"annotation_main"))}
-  if(!dir.exists(file.path(filedir,"annotation_alt"))){dir.create(file.path(filedir,"annotation_alt"))}
+  if(!dir.exists(file.path(filedir,"sil_k"))){dir.create(file.path(filedir,"sil_k"))}
+  if(!dir.exists(file.path(filedir,"gap_0p5"))){dir.create(file.path(filedir,"gap_0p5"))}
+  if(!dir.exists(file.path(filedir,"gap_0p6"))){dir.create(file.path(filedir,"gap_0p6"))}
+  if(!dir.exists(file.path(filedir,"gap_0p7"))){dir.create(file.path(filedir,"gap_0p7"))}
+  if(!dir.exists(file.path(filedir,"gap_0p8"))){dir.create(file.path(filedir,"gap_0p8"))}
+  if(!dir.exists(file.path(filedir,"gap_0p9"))){dir.create(file.path(filedir,"gap_0p9"))}
 
   return("Directory setup complete")
 }
