@@ -89,7 +89,9 @@ ui <- fluidPage(
                       value = 0.2, ticks = F),
           sliderInput("limit_sil", "Silhouette Limit:", min = -0.50, max = 0.70, step = 0.01,
                       value = c(-0.50, 0.70))
-        )
+        ),
+        selectInput("download_pick", "Download results: ", choices = character(0)),
+        downloadButton("download_result")
 
       ),
       mainPanel(
@@ -138,22 +140,11 @@ server <- function(input, output, session){
     )
   })
 
-
-  ### Later:
-  # Expand one plot
-  # Run the expression data for that plot
-  # Display the histograms
-  # Selecting multiple plots
-
   output$seq_cor <- renderText({
     grid <- make_grid()
     paste0("Cor Row: ", length(grid[[1]]), ", Sil Col: ", length(grid[[2]]))
   })
 
-  # Keep cor/sil alongside each file so cells can be placed by parameter
-  # value rather than assuming row-major order lines up with make_grid().
-  # Unfiltered file lookup (urls for every scanned cor/sil combination), used
-  # by tabs that should stay independent of the Scan Results sliders.
   all_files <- reactive({
     index() %>%
       mutate(
@@ -198,11 +189,6 @@ server <- function(input, output, session){
     return(res_filter)
   })
 
-  # For each top result (one per cor, in top_res() rank order), find the
-  # nearest available sil values at top_sil +/- 0.2 (clamped to the
-  # silhouette parameter's [-0.5, 0.7] range) within that same cor. Uses the
-  # full index() rather than make_grid(), so this stays independent of the
-  # Scan Results sliders.
   top_rows <- reactive({
     keys <- top_res()
     req(length(keys) > 0)
@@ -233,11 +219,7 @@ server <- function(input, output, session){
       )
     })
   })
-  # Set of currently-selected grid cells, keyed by "eff_cor|sil_val" strings
-  # (the same values passed into the onclick handler below). Keying off the
-  # *effective* cor rather than the displayed row label means rows that
-  # borrow their panel from a lower cor value (see locf_lookup) share one
-  # selection state instead of being tracked as separate fake duplicates.
+
   selected_keys <- reactiveVal(character(0))
 
   observeEvent(input$clicked_plot, {
@@ -262,9 +244,6 @@ server <- function(input, output, session){
     cluster_annotation <- input$cluster_type
     keys <- selected_keys()
 
-    # cor rows that were skipped during the scan borrow their panels from
-    # the nearest lower cor value that was actually saved (see locf_lookup).
-    # Missing sil values within an otherwise-present cor row stay blank.
     effective_cor <- locf_lookup(cors, unique(files_df$cor))
 
     label_style <- "font-weight: bold; text-align: center; align-self: center;"
@@ -364,10 +343,6 @@ server <- function(input, output, session){
     )
   })
 
-  # One expression-over-time series set per top result (middle column only),
-  # generated automatically so these plots don't require clicking into
-  # Visualize Group. Mirrors time_data() but keyed off top_rows() instead of
-  # selected_keys().
   top_time_data <- reactive({
     rows <- top_rows()
     req(nrow(rows) > 0)
@@ -421,10 +396,7 @@ server <- function(input, output, session){
   })
 
   ### Visualize Group tab ----
-  # One scan() node per selected grid cell: list(metric = ..., labels = named
-  # int vector of gene -> cluster id), keyed by the "cor|sil" strings in
-  # selected_keys(). Returns a named list so downstream code can recover
-  # which (cor, sil) each result came from.
+
   selected_results <- reactive({
     req(length(selected_keys()) > 0)
     map(selected_keys(), \(key){
@@ -439,10 +411,6 @@ server <- function(input, output, session){
     paste0(length(selected_keys()), " Selected")
   })
 
-  # Mean (+/- var) expression over time, one series per cluster per selected
-  # (cor, sil) result, built from the full expression matrix subset to each
-  # cluster's genes. `param_id` tags which selection each row came from so
-  # the plot can facet by selection.
   time_data <- reactive({
     cluster_annotation <- input$cluster_type
     expr_mat <- expr()
@@ -512,14 +480,8 @@ server <- function(input, output, session){
     })
   })
 
-  # A selection key like "0.12|0.30" isn't a valid Shiny output id (contains
-  # "|" and "."), so each dynamically-created output below is namespaced
-  # with a sanitized version of the key instead.
   safe_id <- function(key) gsub("[^A-Za-z0-9]", "_", key)
 
-  # One column per selected (cor, sil) result: param text, expression plot,
-  # then the 4 histograms arranged in a 2x2 grid. Column outputs are created
-  # dynamically since the number of selections varies.
   output$group_columns <- renderUI({
     keys <- selected_keys()
     req(length(keys) > 0)
@@ -579,6 +541,44 @@ server <- function(input, output, session){
       })
     }
   })
+
+  observe({
+    keys <- selected_keys()
+    current <- isolate(input$download_pick)
+    selected <- if (!is.null(current) && current %in% keys) current else if (length(keys) > 0) keys[1] else character(0)
+    updateSelectInput(session, "download_pick", choices = keys, selected = selected)
+  })
+
+  output$download_result <- downloadHandler(
+    filename = function() {
+      paste0(setdir(), "_results.tsv")
+    },
+    content = function(file) {
+      req(input$download_pick)
+      parts <- strsplit(input$download_pick, "|", fixed = TRUE)[[1]]
+      res <- scan()[[normalize_key(parts[1])]][[normalize_key(parts[2])]]
+
+      metric <- res[["metric"]]
+      header <- c(
+        sprintf("# cor = %s, sil = %s", parts[1], parts[2]),
+        sprintf("# silhouette = %s", metric[["silhouette"]]),
+        sprintf("# var = %s", metric[["var"]]),
+        sprintf("# n_cluster = %s", metric[["n_cluster"]]),
+        sprintf("# n_gene = %s", metric[["n_gene"]])
+      )
+
+      gene_tbl <- tibble(
+        gene = names(res[["labels"]]),
+        silhouette_cluster = res[["labels"]],
+        dynamic_cluster = res[["alt_labels"]][names(res[["labels"]])]
+      )
+
+      con <- file(file, open = "wt")
+      on.exit(close(con))
+      writeLines(header, con)
+      write.table(gene_tbl, con, sep = "\t", quote = FALSE, row.names = FALSE)
+    }
+  )
 
 }
 
