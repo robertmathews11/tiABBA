@@ -199,7 +199,8 @@ scan_plot <- function(
 
   plan(sequential)
 
-  return("Plot preparation completed.")
+  print("Saved plots to ", filedir)
+  return(filedir)
 }
 
 #' Create index of results
@@ -239,7 +240,7 @@ scan_index <- function(
     })
   })
   saveRDS(index, file = file.path("app/data", group_file, "index"))
-  return("Finished creation of results index")
+  return(index)
 }
 
 
