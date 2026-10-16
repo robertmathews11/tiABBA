@@ -229,19 +229,21 @@ render_panel <- function(sil_res, cor_mat,
   rm(cor_df)
   rm(heat_plot)
 
+  color_pal <- c("#88CCEEFF", "#CC6677FF", "#DDCC77FF", "#117733FF", "#332288FF", "#AA4499FF", "#44AA99FF", "#999933FF", "#882255FF", "#661100FF", "#6699CCFF", "#888888FF")
   # Create main cluster plot
   cluster_types <- colnames(sil_res[["labels"]])
   walk(cluster_types, \(test_i){
 
-    pull_names <- sil_res[["labels"]] %>% select(test_i) %>% deframe()
+    pull_names <- sil_res[["labels"]] %>% select(test_i)
     annot_df <- tibble(
       col_gene = factor(ord_names, levels = ord_names),
-      cluster = factor(pull_names[ord_names])
+      cluster = factor(pull_names[ord_names,])
     )
 
     annot_plot <- ggplot(annot_df, aes(annot_df$col_gene, 1, fill = annot_df$cluster)) +
       geom_tile() +
       coord_cartesian(expand = FALSE) +
+      scale_fill_manual(values = setNames(color_pal[seq(1:length(unique(annot_df$cluster)))], unique(annot_df$cluster))) +
       guides(fill = "none") +
       theme_void()
 

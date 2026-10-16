@@ -70,6 +70,7 @@ importFrom(ggplot2,
   scale_color_identity,
   scale_fill_gradient2,
   scale_fill_identity,
+  scale_fill_manual,
   scale_linetype_identity,
   scale_linewidth_identity,
   scale_x_continuous,
@@ -95,7 +96,8 @@ importFrom(purrr,
   map_dfr,
   pmap,
   pmap_dfr,
-  reduce
+  reduce,
+  walk
 )
 importFrom(ragg,agg_png)
 importFrom(stats,
