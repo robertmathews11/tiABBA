@@ -358,17 +358,13 @@ server <- function(input, output, session){
 
     pmap_dfr(rows, \(cor_val, sil_low, sil_top, sil_high, key){
       res <- scan()[[normalize_key(cor_val)]][[normalize_key(sil_top)]]
-      labels <- if (cluster_annotation == "Silhouette Clusters") {
-        res[["labels"]]
-      } else {
-        res[["alt_labels"]]
-      }
+
+      labels <- res[["labels"]][[cluster_annotation]]
+      labels <- setNames(labels, row.names(res[["labels"]]))
+
+
       clusters <- sort(unique(labels))
-      palette <- if (cluster_annotation == "Silhouette Clusters") {
-        setNames(color_pal[seq(1:length(clusters))], clusters)
-      } else {
-        setNames(color_pal[seq(1:length(clusters))], clusters)
-      }
+      palette <- setNames(color_pal[seq(1:length(clusters))], clusters)
 
       imap_dfr(split(names(labels), labels), \(genes, cluster_id){
         sub_expr <- expr_mat[intersect(genes, rownames(expr_mat)), , drop = FALSE]
@@ -423,18 +419,12 @@ server <- function(input, output, session){
     expr_mat <- expr()
 
     imap_dfr(selected_results(), \(res, key){
-      labels <- if (cluster_annotation == "Silhouette Clusters") {
-        res[["labels"]]
-      } else {
-        res[["alt_labels"]]
-      }
+
+      labels <- res[["labels"]][[cluster_annotation]]
+      labels <- setNames(labels, row.names(res[["labels"]]))
 
       clusters <- sort(unique(labels))
-      palette <- if (cluster_annotation == "Silhouette Clusters") {
-        setNames(color_pal[seq(1:length(clusters))], clusters)
-      } else {
-        setNames(color_pal[seq(1:length(clusters))], clusters)
-      }
+      palette <- setNames(color_pal[seq(1:length(clusters))], clusters)
 
       imap_dfr(split(names(labels), labels), \(genes, cluster_id){
         sub_expr <- expr_mat[intersect(genes, rownames(expr_mat)), , drop = FALSE]
@@ -532,11 +522,10 @@ server <- function(input, output, session){
         output[[paste0("param_text_", id)]] <- renderPrint({
           res <- results[[key_local]]
           parts <- strsplit(key_local, "|", fixed = TRUE)[[1]]
-          n_cluster <- if (cluster_annotation == "Silhouette Clusters") {
-            length(unique(res[["labels"]]))
-          } else {
-            length(unique(res[["alt_labels"]]))
-          }
+
+          n_cluster <- res[["labels"]][[cluster_annotation]] %>%
+            length(unique)
+
           cat(sprintf(
             "cor = %s, sil = %s\n%d clusters, %d genes\nsilhouette = %.3f",
             parts[1], parts[2], n_cluster, res[["metric"]][["n_gene"]],
