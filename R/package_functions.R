@@ -199,7 +199,7 @@ scan_plot <- function(
 
   plan(sequential)
 
-  print("Saved plots to ", filedir)
+  message("Saved plots to ", filedir)
   return(filedir)
 }
 
