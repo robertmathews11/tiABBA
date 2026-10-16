@@ -524,7 +524,8 @@ server <- function(input, output, session){
           parts <- strsplit(key_local, "|", fixed = TRUE)[[1]]
 
           n_cluster <- res[["labels"]][[cluster_annotation]] %>%
-            length(unique)
+            unique() %>%
+            length()
 
           cat(sprintf(
             "cor = %s, sil = %s\n%d clusters, %d genes\nsilhouette = %.3f",
