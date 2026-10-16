@@ -49,7 +49,7 @@ make_image_cell <- function(match_row, cor_val, sil_val, label = NULL, is_top = 
     return(div(style = "background: #eee; min-width: 150px; min-height: 150px;"))
   }
 
-  annotation_url <- match_row[[cluster_annotation]][1]
+  annotation_url <- match_row[[str_c("url_",cluster_annotation)]][1]
 
   bg <- if (is_top) "#61FF76" else if (is_selected) "#CCCCCC" else "transparent"
 
