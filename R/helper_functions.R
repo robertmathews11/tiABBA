@@ -96,166 +96,6 @@ normalize_rows <- function(
 }
 
 
-#' Condense silhouette result
-#'
-#' @param sil_res A list object containing the results from [totoInferno::silhouette_filter]
-#'
-#' @returns A list object containing result metrics, clustered gene order, and two cluster assignments.
-#'
-#' @export
-
-filter_res <- function(
-
-  sil_res
-
-  ) {
-
-  eigen_metric <- sil_res[["metric"]][["eigen"]]
-  eigen_metric <- eigen_metric %>%
-    distinct(.data$cluster) %>%
-    map(\(cluster_i){
-      sub_cluster <- eigen_metric[eigen_metric$cluster == cluster_i,] %>%
-        arrange(desc(eigen)) %>%
-        select(eigen) %>%
-        deframe()
-
-      eigen_ratio <- sub_cluster[2] / sub_cluster[1]
-      return(data.frame(
-        cluster = cluster_i,
-        eigen = eigen_ratio
-      ))
-    })
-
-  res <- list()
-
-  res[["metric"]] <- list(
-    silhouette = sil_res[["metric"]][[1]],
-    var = sil_res[["metric"]][["within_cluster_var_overall"]],
-    eigen = eigen_metric[[1]],
-    n_cluster = sil_res[["metric"]][["n_clusters_final"]],
-    n_gene = sil_res[["metric"]][["n_genes_out"]]
-  )
-
-  order_labels <- sil_res[["data"]][["labels_final"]][sil_res[["data"]][["hclust_final"]][["order"]]]
-  res[["labels"]] <- order_labels
-
-  gap_seq <- seq(.5, .9, by = 0.1)
-  dist_mat <- as.matrix(sil_res[["data"]][["dist_final"]])
-
-  dynamic_res <- map(gap_seq, \(gap_i){
-
-    dynamic_cut <- cutreeHybrid(sil_res[["data"]][["hclust_final"]], distM = dist_mat,
-                                verbose = 0, deepSplit = 0, minClusterSize = 5,
-                                minGap = gap_i)
-    alt_res <- setNames(dynamic_cut$labels, names(sil_res[["data"]][["labels_final"]]))
-    order_alt <- alt_res[sil_res[["data"]][["hclust_final"]][["order"]]]
-
-    return(order_alt)
-
-  }) %>%
-    setNames(str_c("gap_", str_replace(as.character(gap_seq), "\\.", "p"))) %>%
-    as.data.frame()
-
-
-  res[["labels"]] <- cbind(
-    data.frame(sil_k = order_labels, row.names = names(order_labels)),
-    dynamic_res
-  )
-
-  return(res)
-}
-
-
-#' Render individual results panel
-#'
-#' @param sil_res Results from [tiABBA::scan_silhouette]
-#' @param cor_mat A square correlation matrix
-#' @param cor_cut Numeric value of correlation parameter
-#' @param sil_cut Numeric value of silhouette parameter
-#' @param outdir File path to group_condition
-#' @param size_px Image size to be saved
-#' @param max_dim Maximum image size to save
-#'
-#' @returns A saved heatmap and annotation png
-#'
-#' @export
-#'
-render_panel <- function(sil_res, cor_mat,
-                         cor_cut, sil_cut,
-                         outdir, size_px = 300, max_dim = size_px) {
-
-
-
-  # Prepare data for plotting
-  ord_names <- row.names(sil_res[["labels"]])
-
-  caption_text <- sprintf(
-    "n=%d  var=%.3f  sil=%.3f",
-    sil_res[["metric"]][["n_gene"]],
-    sil_res[["metric"]][["var"]],
-    sil_res[["metric"]][["silhouette"]]
-  )
-
-  param_id <- make_param_id(cor_cut, sil_cut)
-
-  # Create correlation heatmap
-  cor_sub <- downsample_cor(cor_mat[ord_names, ord_names], max_dim = max_dim)
-  heat_names <- rownames(cor_sub)
-  cor_df <- cor_sub %>%
-    as.data.frame() %>%
-    rownames_to_column("row_gene") %>%
-    pivot_longer(-.data$row_gene, names_to = "col_gene", values_to = "correlation") %>%
-    mutate(
-      row_gene = factor(.data$row_gene, levels = heat_names),
-      col_gene = factor(.data$col_gene, levels = heat_names)
-    )
-
-  heat_plot <- ggplot(cor_df, aes(cor_df$col_gene, cor_df$row_gene, fill = cor_df$correlation)) +
-    geom_tile() +
-    scale_fill_gradient2(
-      low = "blue", mid = "white", high = "red",
-      midpoint = 0, limits = c(-1, 1)
-    ) +
-    coord_cartesian(expand = FALSE) +
-    labs(caption = caption_text) +
-    guides(fill = "none") +
-    theme_void() +
-    theme(plot.caption = element_text(size = 4, hjust = 0.5, margin = margin(t = 1)))
-
-  ggsave(file.path(outdir,"heatmap",paste0(param_id,".png")),
-         plot = heat_plot, width = size_px, height = size_px, units = "px",
-         device = ragg::agg_png)
-  rm(cor_sub)
-  rm(cor_df)
-  rm(heat_plot)
-
-  color_pal <- c("#88CCEEFF", "#CC6677FF", "#DDCC77FF", "#117733FF", "#332288FF", "#AA4499FF", "#44AA99FF", "#999933FF", "#882255FF", "#661100FF", "#6699CCFF", "#888888FF")
-  # Create main cluster plot
-  cluster_types <- colnames(sil_res[["labels"]])
-  walk(cluster_types, \(test_i){
-
-    pull_names <- sil_res[["labels"]] %>% select(test_i)
-    annot_df <- tibble(
-      col_gene = factor(ord_names, levels = ord_names),
-      cluster = factor(pull_names[ord_names,])
-    )
-
-    annot_plot <- ggplot(annot_df, aes(annot_df$col_gene, 1, fill = annot_df$cluster)) +
-      geom_tile() +
-      coord_cartesian(expand = FALSE) +
-      scale_fill_manual(values = setNames(color_pal[seq(1:length(unique(annot_df$cluster)))], unique(annot_df$cluster))) +
-      guides(fill = "none") +
-      theme_void()
-
-    ggsave(file.path(outdir,test_i,paste0(param_id,".png")),
-           plot = annot_plot, width = size_px, height = 50, units = "px",
-           device = ragg::agg_png)
-  })
-
-  return()
-}
-
-
 #' Make parameter file ID
 #'
 #' @param cor_cut Numeric value of correlation parameter
@@ -308,4 +148,60 @@ downsample_cor <- function(
   block_names <- sprintf("b%03d", seq_len(max_dim))
   dimnames(binned) <- list(block_names, block_names)
   binned
+}
+
+
+#' Prepare time data
+#'
+#' This function prepares time expression for group-mean plotting
+#'
+#' @param input_expression A matrix or data.frame object with rows and genes and columns as time points
+#'
+#' @returns A data.frame object formatted for use in [tiABBA::time_plot]
+#'
+#' @export
+
+prepare_time <- function(
+
+  input_expression
+
+) {
+  # Process individual cluster group
+  gene_count <- nrow(input_expression)
+
+  # Make data frame to return for plotting
+  res <- data.frame(
+    # Values for plotting
+    expression = apply(input_expression, 2, mean),
+    var = apply(input_expression, 2, var),
+    time = colnames(input_expression) %>% str_split_i(pattern = "_", 2) %>% as.numeric()
+  )
+  res_extend <- res %>% filter(.data$time <= 8)
+  res_extend <- res_extend %>% mutate(time = .data$time + 24)
+
+  res <- rbind(res, res_extend)
+
+  return(res)
+}
+
+
+#' Find IQR
+#'
+#' This function assists with quickly finding the IQR of a vector
+#'
+#' @param input_vector A numeric vector object
+#'
+#' @returns Two values containing the IQR - 1.5Q1 and IQR + 1.5Q3
+#'
+#' @export
+
+find_iqr <- function(input_vector){
+  iqr <- IQR(input_vector)
+  q1 <- quantile(input_vector, 0.25)
+  q3 <- quantile(input_vector, 0.75)
+
+  low_lim <- (q1 - (1.5 * iqr))
+  up_lim <- (q3 + (1.5 * iqr))
+
+  return(c(low_lim, up_lim))
 }
